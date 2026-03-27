@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: tracechain-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tracechain
+      POSTGRES_PASSWORD: tracechain
+      POSTGRES_DB: tracechain
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: tracechain-ipfs
+    restart: unless-stopped
+    ports:
+      - '4001:4001'
+      - '5001:5001'
+      - '8080:8080'
+    volumes:
+      - ipfs_staging:/export
+      - ipfs_data:/data/ipfs
+
+volumes:
+  postgres_data:
+  ipfs_staging:
+  ipfs_data:
