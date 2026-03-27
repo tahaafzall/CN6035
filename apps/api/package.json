@@ -1,0 +1,50 @@
+{
+  "name": "@tracechain/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsup src/server.ts --format esm --out-dir dist --clean",
+    "start": "node dist/server.js",
+    "lint": "eslint src tests --ext .ts",
+    "test": "vitest run",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma generate && prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "prisma generate && tsx prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.5.0",
+    "@tracechain/shared": "1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "ipfs-http-client": "^60.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "swagger-ui-express": "^5.0.1",
+    "viem": "^2.28.0",
+    "yamljs": "^0.3.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.8",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.13.4",
+    "@types/supertest": "^6.0.3",
+    "@types/swagger-ui-express": "^4.1.8",
+    "pino-pretty": "^13.0.0",
+    "prisma": "^6.5.0",
+    "supertest": "^7.0.0",
+    "vitest": "^3.0.8"
+  }
+}

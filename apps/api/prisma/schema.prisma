@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ParticipantRole {
+  ADMIN
+  MANUFACTURER
+  LOGISTICS
+  DISTRIBUTOR
+  PHARMACY
+  REGULATOR
+}
+
+enum BatchStatus {
+  DRAFT
+  REGISTERED
+  IN_TRANSIT
+  DELIVERED
+  RECALLED
+  DISPENSED
+  ANOMALY
+}
+
+enum TransferStatus {
+  REQUESTED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum SeverityLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Organization {
+  id                   String           @id @default(cuid())
+  walletAddress        String           @unique
+  name                 String?
+  role                 ParticipantRole?
+  contactEmail         String?
+  location             String?
+  complianceId         String?
+  website              String?
+  notes                String?
+  isProfileComplete    Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  batchesManufactured  Batch[]          @relation("ManufacturerBatches")
+  currentCustodyBatches Batch[]         @relation("CustodianBatches")
+  outboundTransfers    Transfer[]       @relation("OutboundTransfers")
+  inboundTransfers     Transfer[]       @relation("InboundTransfers")
+  auditEvents          AuditEvent[]     @relation("OrgAuditEvents")
+}
+
+model AuthNonce {
+  walletAddress String   @id
+  nonce         String
+  message       String
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+}
+
+model Batch {
+  id                 String        @id @default(cuid())
+  onChainBatchId     Int?          @unique
+  batchCode          String        @unique
+  productName        String
+  category           String
+  description        String
+  originCountry      String
+  destinationMarket  String
+  unitCount          Int
+  storageTempMin     Float
+  storageTempMax     Float
+  manufacturedAt     DateTime
+  expiresAt          DateTime
+  metadataCid        String?
+  metadataHash       String        @unique
+  documentCid        String?
+  documentHash       String
+  lastTxHash         String?
+  status             BatchStatus   @default(DRAFT)
+  manufacturerId     String
+  currentCustodianId String?
+  manufacturer       Organization  @relation("ManufacturerBatches", fields: [manufacturerId], references: [id])
+  currentCustodian   Organization? @relation("CustodianBatches", fields: [currentCustodianId], references: [id])
+  telemetry          SensorReading[]
+  transfers          Transfer[]
+  auditEvents        AuditEvent[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@index([status, updatedAt])
+  @@index([manufacturerId, createdAt])
+}
+
+model Transfer {
+  id               String         @id @default(cuid())
+  batchId          String
+  batch            Batch          @relation(fields: [batchId], references: [id])
+  fromOrgId        String?
+  fromOrg          Organization?  @relation("OutboundTransfers", fields: [fromOrgId], references: [id])
+  toOrgId          String?
+  toOrg            Organization?  @relation("InboundTransfers", fields: [toOrgId], references: [id])
+  toWalletAddress  String
+  shipmentReference String
+  shipmentHash     String         @unique
+  checkpointCid    String?
+  notes            String?
+  txHash           String?
+  status           TransferStatus @default(REQUESTED)
+  requestedAt      DateTime       @default(now())
+  acceptedAt       DateTime?
+
+  @@index([batchId, requestedAt])
+}
+
+model SensorReading {
+  id              String        @id @default(cuid())
+  batchId         String
+  batch           Batch         @relation(fields: [batchId], references: [id])
+  temperatureC    Float
+  humidityPercent Float
+  latitude        Float
+  longitude       Float
+  recordedAt      DateTime
+  deviceId        String
+  severity        SeverityLevel @default(LOW)
+  note            String?
+  createdAt       DateTime      @default(now())
+
+  @@index([batchId, recordedAt])
+}
+
+model AuditEvent {
+  id             String        @id @default(cuid())
+  eventRef       String        @unique
+  batchId        String?
+  batch          Batch?        @relation(fields: [batchId], references: [id])
+  organizationId String?
+  organization   Organization? @relation("OrgAuditEvents", fields: [organizationId], references: [id])
+  eventType      String
+  actorWallet    String
+  txHash         String?
+  blockNumber    Int?
+  chainId        Int?
+  payload        Json
+  createdAt      DateTime      @default(now())
+
+  @@index([batchId, createdAt])
+}
+
+model ChainCursor {
+  chainId            Int      @id
+  lastProcessedBlock BigInt   @default(0)
+  updatedAt          DateTime @updatedAt
+}
